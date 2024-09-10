@@ -18,6 +18,7 @@ export interface Story {
   totalPercent: string;
   remainingHours: string;
   totalNewHR: string,
+  totalClosedNewHora: string,
 }
 
 export interface TotalTaskInfo {
@@ -27,6 +28,7 @@ export interface TotalTaskInfo {
   totalClosedHR: string;
   totalNew: number;
   totalNewHR: string,
+  totalClosedNewHora: string,
 }
 
 export interface SumStorys {
