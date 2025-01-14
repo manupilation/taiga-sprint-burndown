@@ -1,6 +1,6 @@
 {
   "name": "@dantasdev/taiga-sprint-burndown",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "todo",
   "keywords": [],
   "author": "dantas-dev",
@@ -21,6 +21,7 @@
     "vite-plugin-static-copy": "^1.0.6"
   },
   "dependencies": {
+    "chart.js": "4.4.7",
     "crx": "^5.0.1",
     "dotenv": "^16.4.5"
   }
