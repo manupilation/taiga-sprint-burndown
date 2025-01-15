@@ -14,6 +14,7 @@ import { createTotalNewHRWrapper } from "./layout/totalNewHr";
 import { createQtdNewWrapper } from "./layout/qtdNew";
 import { createDurationWrapper } from "./layout/duration";
 import { updateTotalClosedWrapper } from "./layout/totalClosed";
+import { generateChart } from "./generateChart";
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   function checkNaN(hr: string) {
@@ -45,6 +46,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     const squadName = getSquadName();
     const duration = getDuration();
     const storys = getStorys();
+    generateChart(duration);
     const {
       totalHR,
       totalTypes,
