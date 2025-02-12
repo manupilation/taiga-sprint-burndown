@@ -14,7 +14,8 @@ import { createTotalNewHRWrapper } from "./layout/totalNewHr";
 import { createQtdNewWrapper } from "./layout/qtdNew";
 import { createDurationWrapper } from "./layout/duration";
 import { updateTotalClosedWrapper } from "./layout/totalClosed";
-import { generateChart } from "./generateChart";
+import { generateChartData } from "./charts/generateChart";
+import { elementsToKillAndExplode } from "./consts";
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   function checkNaN(hr: string) {
@@ -28,13 +29,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   function clearElements() {
-    conditionalRemoveElement('#duration');
-    conditionalRemoveElement('#total-hr-wrapper');
-    conditionalRemoveElement('#qtd-new-hr-wrapper');
-    conditionalRemoveElement('#qtd-total');
-    conditionalRemoveElement('#qtd-new');
-    conditionalRemoveElement('#qtd-new-hr');
-    conditionalRemoveElement('#members-info-wrapper');
+    elementsToKillAndExplode.forEach(conditionalRemoveElement)
     const stories = Array.from(document.querySelectorAll('#stories'));
     stories.forEach((element) => {
       element.remove();
@@ -46,7 +41,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     const squadName = getSquadName();
     const duration = getDuration();
     const storys = getStorys();
-    generateChart(duration);
     const {
       totalHR,
       totalTypes,
@@ -61,6 +55,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       parseTime(totalHR)
     );
     const remainingHours = subtractTimes(totalClosedHR, totalHR);
+
+    const canvasContainer = document.querySelector('.graphics-container') as HTMLDivElement | null;
+
+    const chartCanvas = generateChartData({
+      duration,
+      totalHR,
+      totalClosed: totalClosedHR,
+    });
+
+    canvasContainer.append(chartCanvas);
 
     const mainTaskboard = document.querySelector(
       ".main.taskboard"

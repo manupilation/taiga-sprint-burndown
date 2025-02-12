@@ -9,7 +9,6 @@ export function getTasks(document: Element): Task[] {
         tasks.push(getTaskInfo(item))
       })
 
-    
     return tasks;
   } catch (error) {
     return [];
