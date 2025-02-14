@@ -42,6 +42,7 @@ export const layoutService = {
       ".summary-stats.summary-iocaine",
       ".summary-stats.summary-open-tasks",
       ".points-per-role-stats",
+      ".toggle-analytics-visibility"
     ];
 
     classesToRemove.forEach((classToRemove) => {
@@ -111,11 +112,13 @@ export const layoutService = {
     layoutService.createTotalNewHRWrapper(mainSummaryStats, totalNewHR);
     layoutService.createQtdNewWrapper(mainSummaryStats, totalNew);
     layoutService.createDurationWrapper(summary, duration);
-    layoutService.createChartCanvas(duration, totalHR, totalClosedHR)
 
     const membersAndTasksWrapper = layoutService.createMembersAndTasksWrapper(
       aggregatedMembersInfo,
-      totalTypes
+      totalTypes,
+      duration,
+      totalHR,
+      totalClosedHR
     );
 
     const taskboardInner = document.querySelector(".taskboard-inner");
@@ -126,15 +129,13 @@ export const layoutService = {
   },
 
   createChartCanvas(duration: string, totalHR: string, totalClosedHR: string) {
-    const canvasContainer = document.querySelector('.graphics-container') as HTMLDivElement | null;
-  
     const chartCanvas = generateChartData({
       duration,
       totalHR,
       totalClosed: totalClosedHR,
     });
 
-    canvasContainer.append(chartCanvas);
+    return chartCanvas;
   },
 
   /**
@@ -145,19 +146,24 @@ export const layoutService = {
    */
   createMembersAndTasksWrapper: (
     aggregatedMembersInfo: MemberTaskInfo[],
-    totalTypes: Record<string, number>
+    totalTypes: Record<string, number>,
+    duration: string,
+    totalHR: string,
+    totalClosedHR: string
   ) => {
     const membersInfoWrapper = layoutService.createMembersInfoWrapper(
       aggregatedMembersInfo
     );
 
     const totalTasksWrapper = layoutService.createTotalTasksWrapper(totalTypes);
+    const chartCanva =  layoutService.createChartCanvas(duration, totalHR, totalClosedHR)
 
     const internalWrapper = document.createElement("div");
     internalWrapper.className = "sprint-burndown__members-internal-wrapper";
 
     internalWrapper.appendChild(membersInfoWrapper);
     internalWrapper.appendChild(totalTasksWrapper);
+    internalWrapper.appendChild(chartCanva);
 
     const membersAndTasksWrapper = document.createElement("div");
     membersAndTasksWrapper.className =
