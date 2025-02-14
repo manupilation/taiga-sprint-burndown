@@ -1,5 +1,5 @@
 export interface MemberTaskInfo {
-  member: string;
+  name: string;
   img: string;
   assignedTasks: number;
   closedTasks: number;
