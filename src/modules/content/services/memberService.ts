@@ -17,7 +17,7 @@ export const memberService = {
   aggregateMembersInfo(stories: Story[]): MemberTaskInfo[] {
     const memberMap: {
       [member: string]: {
-        member: string;
+        name: string;
         img: string;
         assignedHours: number;
         closedHours: number;
@@ -35,7 +35,7 @@ export const memberService = {
         if (assignedTo !== "Not assigned") {
           if (!memberMap[assignedTo]) {
             memberMap[assignedTo] = {
-              member: assignedTo,
+              name: assignedTo,
               img: memberImageUrl,
               assignedHours: 0,
               closedHours: 0,
@@ -62,10 +62,10 @@ export const memberService = {
         }
         return b.closedTasks - a.closedTasks;
       })
-      .map(({ member, img, closedHours, assignedHours, assignedTasks, closedTasks }) => {
+      .map(({ name, img, closedHours, assignedHours, assignedTasks, closedTasks }) => {
         const hoursPerDay = closedHours / differenceInDaysFromToday;
         return {
-          member,
+          name,
           img,
           assignedHours: formatTime(assignedHours),
           closedHours: formatTime(closedHours),
