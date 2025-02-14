@@ -8,13 +8,23 @@ export default defineConfig({
     rollupOptions:{
       input:{
         popup: "./popup.html",
-        background: "./src/background/main.ts",
-        content: "./src/content/main.ts",
+        background: "./src/modules/background/index.ts",
+        content: "./src/modules/content/index.ts",
       },
       output:{
         entryFileNames: "[name].js"
       }
     },
   },
+  plugins: [
+    viteStaticCopy({
+      targets: [
+        {
+          src: 'src/modules/content/index.css', // Caminho do CSS no projeto
+          dest: 'assets', // Caminho onde será gerado em `dist`
+        },
+      ],
+    }),
+  ],
   base: "./"
 });
