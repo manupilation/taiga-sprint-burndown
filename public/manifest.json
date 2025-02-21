@@ -22,7 +22,8 @@
       ],
       "js": [
         "content.js"
-      ]
+      ],
+      "css": ["assets/index.css"]
     }
   ],
   "action": {

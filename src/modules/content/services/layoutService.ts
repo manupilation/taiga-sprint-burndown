@@ -1,0 +1,348 @@
+import { MemberTaskInfo } from "../../../interfaces/Member";
+import { SummaryData } from "../../../interfaces/SummaryData";
+import { generateChartData } from "../helpers/charts/generateChart";
+import { checkNaN } from "../helpers/checkNaN";
+import { elementsToKillAndExplode } from "../helpers/consts";
+
+/**
+ * Serviço responsável por manipular elementos do layout da interface.
+ */
+export const layoutService = {
+
+
+  /**
+   * Remove elementos específicos do DOM pelo ID para limpar os dados da extensão caso já estejam na tela.
+   */
+  clearElements() {
+    elementsToKillAndExplode.forEach((identifier) => {
+      const element = document.querySelector(identifier);
+      if (element) element.remove();
+    });
+
+    document
+      .querySelectorAll("#stories")
+      .forEach((element) => element.remove());
+  },
+
+
+  /**
+   * Limpa o conteúdo da div .large-summary nativa do Taiga e move elementos necessários para a área correspondente.
+   * @param summary Elemento HTML que representa a div .large-summary.
+   */
+  clearSummary(summary: HTMLDivElement) {
+    summary.classList.add("active");
+    const toggleAnalyticsWrapper = summary.querySelector(
+      ".stats.toggle-analytics-visibility"
+    ) as HTMLDivElement;
+    const largeSummaryWrapper = summary.querySelector(
+      ".large-summary-wrapper"
+    ) as HTMLDivElement;
+    largeSummaryWrapper.appendChild(toggleAnalyticsWrapper);
+    const classesToRemove = [
+      ".summary-stats.summary-iocaine",
+      ".summary-stats.summary-open-tasks",
+      ".points-per-role-stats",
+      ".toggle-analytics-visibility"
+    ];
+
+    classesToRemove.forEach((classToRemove) => {
+      const element = document.querySelector(classToRemove);
+      if (element) element.remove();
+    });
+  },
+
+
+  /**
+   * Atualiza a barra de progresso com a porcentagem fornecida.
+   * @param percent Porcentagem a ser exibida na barra de progresso.
+   */
+  updateProgressBar(percent: string) {
+    const progressBarWrapper = document.querySelector(
+      ".summary-progress-wrapper"
+    );
+    const progressBar = progressBarWrapper?.querySelector(
+      ".current-progress"
+    ) as HTMLElement;
+    const progressBarDataNumber = progressBarWrapper?.querySelector(
+      ".number"
+    ) as HTMLElement;
+
+    if (progressBar && progressBarDataNumber) {
+      progressBar.style.width = `${percent}%`;
+      progressBarDataNumber.innerText = `${percent}%`;
+    }
+  },
+
+
+  /**
+   * Renderiza todas as informações da extensão da interface.
+   * @param summaryData Objeto contendo os dados necessários para exibição das informações.
+   */
+  renderSummary({
+    totalClosedHR,
+    totalHR,
+    remainingHours,
+    totalNewHR,
+    totalNew,
+    duration,
+    totalClosed,
+    aggregatedMembersInfo,
+    totalTypes,
+  }: SummaryData) {
+    const mainTaskboard = document.querySelector(
+      ".main.taskboard"
+    ) as HTMLDivElement;
+    const summary = mainTaskboard.querySelector(
+      ".large-summary"
+    ) as HTMLDivElement;
+
+    if (!summary) return;
+
+    layoutService.clearSummary(summary);
+
+    const mainSummaryStats = summary.querySelector(".main-summary-stats");
+
+    layoutService.createTotalHrWrapper(
+      mainSummaryStats,
+      totalClosedHR,
+      totalHR,
+      remainingHours
+    );
+    layoutService.updateTotalClosedWrapper(totalClosed);
+    layoutService.createTotalNewHRWrapper(mainSummaryStats, totalNewHR);
+    layoutService.createQtdNewWrapper(mainSummaryStats, totalNew);
+    layoutService.createDurationWrapper(summary, duration);
+
+    const membersAndTasksWrapper = layoutService.createMembersAndTasksWrapper(
+      aggregatedMembersInfo,
+      totalTypes,
+      duration,
+      totalHR,
+      totalClosedHR
+    );
+
+    const taskboardInner = document.querySelector(".taskboard-inner");
+    taskboardInner.insertBefore(
+      membersAndTasksWrapper,
+      taskboardInner.childNodes[5]
+    );
+  },
+
+  createChartCanvas(duration: string, totalHR: string, totalClosedHR: string) {
+    const chartCanvas = generateChartData({
+      duration,
+      totalHR,
+      totalClosed: totalClosedHR,
+    });
+
+    return chartCanvas;
+  },
+
+  /**
+   * Cria um wrapper que agrupa informações de membros e tarefas.
+   * @param aggregatedMembersInfo Informações agregadas sobre os membros.
+   * @param totalTypes Total de tipos de tarefas agrupadas.
+   * @returns { HTMLDivElement } Elemento HTML contendo o agrupamento de informações.
+   */
+  createMembersAndTasksWrapper: (
+    aggregatedMembersInfo: MemberTaskInfo[],
+    totalTypes: Record<string, number>,
+    duration: string,
+    totalHR: string,
+    totalClosedHR: string
+  ) => {
+    const membersInfoWrapper = layoutService.createMembersInfoWrapper(
+      aggregatedMembersInfo
+    );
+
+    const totalTasksWrapper = layoutService.createTotalTasksWrapper(totalTypes);
+    const chartCanva =  layoutService.createChartCanvas(duration, totalHR, totalClosedHR)
+
+    const internalWrapper = document.createElement("div");
+    internalWrapper.className = "sprint-burndown__members-internal-wrapper";
+
+    internalWrapper.appendChild(membersInfoWrapper);
+    internalWrapper.appendChild(totalTasksWrapper);
+    internalWrapper.appendChild(chartCanva);
+
+    const membersAndTasksWrapper = document.createElement("div");
+    membersAndTasksWrapper.className =
+      "sprint-burndown__members-external-wrapper";
+    membersAndTasksWrapper.id = "members-info-wrapper";
+    membersAndTasksWrapper.appendChild(internalWrapper);
+
+    return membersAndTasksWrapper;
+  },
+
+
+  /**
+   * Cria um wrapper contendo informações dos membros.
+   * @param aggregatedMembersInfo Informações agregadas sobre os membros.
+   * @returns { HTMLDivElement } Elemento HTML contendo os dados formatados.
+   */
+  createMembersInfoWrapper: (aggregatedMembersInfo: MemberTaskInfo[]) => {
+    const title = document.createElement("h3");
+    title.className = "sprint-burndown__title";
+    title.textContent = "Membros";
+
+    const list = document.createElement("ul");
+    list.className = "sprint-burndown__members";
+    list.innerHTML = aggregatedMembersInfo
+    .map((member) => `<li>
+    <img src="${member.img}" alt="${member.name}" title="${member.name}" />
+    <div>
+      <p>${member.name}<p>
+      <small>${member.closedHours}H / ${member.assignedHours}H</small>
+      <small>${member.closedTasks} / ${member.assignedTasks} tasks</small>
+      <small>${member.hoursPerDay}H / Day</small>
+    </div>
+    </li>`)
+    .join("");
+
+    const wrapper = document.createElement("div");
+    wrapper.id = "members-info-wrapper";
+    wrapper.appendChild(title);
+    wrapper.appendChild(list);
+
+    return wrapper;
+  },
+
+
+  /**
+   * Cria um wrapper contendo a lista de tarefas por tipo.
+   * @param totalTypes Objeto com os tipos de tarefas e suas quantidades.
+   * @returns { HTMLDivElement } Elemento HTML contendo a lista formatada.
+   */
+  createTotalTasksWrapper: (totalTypes: Record<string, number>) => {
+    const title = document.createElement("h3");
+    title.className = "sprint-burndown__title";
+
+    const list = document.createElement("ul");
+    list.className = "sprint-burndown__total-tasks--list";
+    list.innerHTML = Object.entries(totalTypes)
+      .map(([key, value]) => `<li>${key}: ${value}</li>`)
+      .join("");
+
+    const wrapper = document.createElement("div");
+    wrapper.id = "qtd-total-wrapper";
+    const totalOfTotalTypes = Object.values(totalTypes).reduce(
+      (acc, curr) => acc + curr,
+      0
+    );
+
+    title.textContent = `Tasks (${totalOfTotalTypes})`;
+    wrapper.appendChild(title);
+    wrapper.appendChild(list);
+
+    return wrapper;
+  },
+
+
+  /**
+   * Cria e insere o wrapper que exibe o total de horas marcadas com new (totalNewHR).
+   * @param mainSummaryStats Elemento do DOM onde o wrapper será inserido.
+   * @param totalNewHR Total de horas new a serem exibidas.
+   */
+  createTotalNewHRWrapper(mainSummaryStats: Element, totalNewHR: string) {
+    const newHrWrapper = document.createElement("div");
+    newHrWrapper.className = "summary-stats";
+    newHrWrapper.id = "qtd-new-hr";
+    const newHrNumber = document.createElement("span");
+    newHrNumber.className = "number";
+    const newHrDescription = document.createElement("span");
+    newHrDescription.className = "description";
+    newHrNumber.textContent = totalNewHR;
+    newHrDescription.innerHTML = "total new<br/>(hrs)";
+    newHrWrapper.appendChild(newHrNumber);
+    newHrWrapper.appendChild(newHrDescription);
+    mainSummaryStats.insertBefore(newHrWrapper, mainSummaryStats.childNodes[7]);
+  },
+
+
+  /**
+   * Cria e insere o wrapper que exibe as horas totais (totalClosedHR / totalHR)
+   * e as horas restantes (remainingHours).
+   * @param mainSummaryStats Elemento do DOM onde o wrapper será inserido.
+   * @param totalClosedHR Total de horas marcadas com closed.
+   * @param totalHR Total de horas atribuídas.
+   * @param remainingHours Total de horas restantes.
+   */
+  createTotalHrWrapper(
+    mainSummaryStats: Element,
+    totalClosedHR: string,
+    totalHR: string,
+    remainingHours: string
+  ) {
+    const totalHrWrapper = document.createElement("div");
+    totalHrWrapper.className = "summary-stats";
+    const totalHrNumber = document.createElement("span");
+    totalHrNumber.id = "total-hr";
+    totalHrWrapper.id = "total-hr-wrapper";
+    totalHrNumber.className = "number";
+    const totalHrDescription = document.createElement("span");
+    totalHrDescription.className = "description";
+    totalHrNumber.textContent = `${checkNaN(totalClosedHR)} / ${checkNaN(
+      totalHR
+    )}`;
+    totalHrDescription.innerHTML = `total hrs <br/>(${remainingHours} hrs remaining)`;
+    totalHrWrapper.appendChild(totalHrNumber);
+    totalHrWrapper.appendChild(totalHrDescription);
+    mainSummaryStats.insertBefore(
+      totalHrWrapper,
+      mainSummaryStats.childNodes[0]
+    );
+  },
+
+
+  /**
+   * Cria e insere o wrapper que exibe o número total de novas tarefas (totalNew).
+   * @param mainSummaryStats Elemento do DOM onde o wrapper será inserido.
+   * @param totalNew Total de horas marcadas com new.
+   */
+  createQtdNewWrapper(mainSummaryStats: Element, totalNew: number) {
+    const qtdNewWrapper = document.createElement("div");
+    qtdNewWrapper.className = "summary-stats";
+    const qtdNewNumber = document.createElement("span");
+    qtdNewWrapper.id = "qtd-new";
+    qtdNewNumber.className = "number";
+    const qtdNewDescription = document.createElement("span");
+    qtdNewDescription.className = "description";
+    qtdNewNumber.textContent = `${totalNew}`;
+    qtdNewDescription.innerHTML = "new<br/> tasks";
+    qtdNewWrapper.appendChild(qtdNewNumber);
+    qtdNewWrapper.appendChild(qtdNewDescription);
+    mainSummaryStats.insertBefore(
+      qtdNewWrapper,
+      mainSummaryStats.childNodes[7]
+    );
+  },
+
+
+  /**
+   * Cria e insere o wrapper que exibe a duração do sprint (duration).
+   * @param summary Elemento do DOM onde o wrapper será inserido.
+   * @param duration Duração do sprint.
+   */
+  createDurationWrapper(summary: Element, duration: string) {
+    const durationWrapper = document.createElement("div");
+    durationWrapper.className =
+      "sprint-burndown__duration-wrapper summary-stats";
+    durationWrapper.id = "duration";
+    const durationDescription = document.createElement("span");
+    durationDescription.className = "description";
+    durationDescription.textContent = duration;
+    durationWrapper.appendChild(durationDescription);
+    summary.insertBefore(durationWrapper, summary.childNodes[0]);
+  },
+
+
+  /**
+   * Atualiza o wrapper que exibe o número total de tarefas marcadas com closed.
+   * @param totalClosed Total de tarefas marcadas com closed.
+   */
+  updateTotalClosedWrapper(totalClosed: number) {
+    const totalClosedWrapper = document.querySelector(".summary-closed-tasks");
+    const totalClosedNumber = totalClosedWrapper.childNodes[0] as HTMLElement;
+    totalClosedNumber.innerText = `${totalClosed}`;
+  },
+};
